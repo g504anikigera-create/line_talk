@@ -1,0 +1,29 @@
+name: 静岡 来店予定をLINEに送る
+
+on:
+  schedule:
+    - cron: "30 23 * * 6"   # 毎週日曜 8:30（日本時間）。GitHubの都合で数分〜数十分遅れることがあります
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "送信せずに本文だけ確認する"
+        type: boolean
+        default: true
+
+jobs:
+  send:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: 集計して送信
+        env:
+          LINE_CHANNEL_ACCESS_TOKEN: ${{ secrets.LINE_CHANNEL_ACCESS_TOKEN }}
+          LINE_TO: ${{ secrets.LINE_TO }}
+          DAYS_AHEAD: "31"
+          DRY_RUN: ${{ github.event_name == 'workflow_dispatch' && inputs.dry_run && '1' || '0' }}
+        run: python raiten.py
